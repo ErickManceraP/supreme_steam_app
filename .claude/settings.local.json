@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub get:*)",
+      "Bash(export LANG=en_US.UTF-8)",
+      "Bash(pod install)",
+      "Bash(flutter run:*)",
+      "Bash(flutter devices:*)",
+      "Bash(nc:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
