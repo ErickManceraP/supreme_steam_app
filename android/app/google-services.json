@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1007589703352",
+    "project_id": "supreme-steam",
+    "storage_bucket": "supreme-steam.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007589703352:android:2bc8d4784b3f4fabe37e4d",
+        "android_client_info": {
+          "package_name": "com.bya.supremeSteam"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1007589703352-ke9oda5q45sf2pf7ahukshqp7sanjp99.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bya.supremeSteam",
+            "certificate_hash": "420a87222d22aa145f04986c80c492667e72c222"
+          }
+        },
+        {
+          "client_id": "1007589703352-ifqmuossng5l6posq36nvudpqpebns31.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDV_wr0yPIRk13YoIRvG2ChQ3yL7NvEAYY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1007589703352-ifqmuossng5l6posq36nvudpqpebns31.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1007589703352-qm53qf12vdoav094cl92ktj67fv89pmr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bya.supremeSteam"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

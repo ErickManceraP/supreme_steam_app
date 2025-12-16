@@ -6,7 +6,9 @@
       "Bash(pod install)",
       "Bash(flutter run:*)",
       "Bash(flutter devices:*)",
-      "Bash(nc:*)"
+      "Bash(nc:*)",
+      "Bash(pod repo update:*)",
+      "Bash(flutter pub upgrade:*)"
     ],
     "deny": [],
     "ask": []

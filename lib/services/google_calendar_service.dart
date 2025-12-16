@@ -4,7 +4,14 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 
 class GoogleCalendarService {
-  static const _scopes = [calendar.CalendarApi.calendarReadonlyScope];
+  // IMPORTANT: Configure your business calendar ID here
+  // This is where customer bookings will be created
+  // Use 'primary' for your main calendar, or a specific calendar ID
+  static const String businessCalendarId = 'primary';
+
+  static const _scopes = [
+    calendar.CalendarApi.calendarScope, // Full calendar access (read + write)
+  ];
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: _scopes,
@@ -45,8 +52,8 @@ class GoogleCalendarService {
       throw Exception('Not signed in');
     }
 
-    final startOfDay = DateTime(date.year, date.month, date.day, 8, 0);
-    final endOfDay = DateTime(date.year, date.month, date.day, 18, 0);
+    final startOfDay = DateTime(date.year, date.month, date.day, 9, 0);
+    final endOfDay = DateTime(date.year, date.month, date.day, 17, 0);
 
     try {
       final events = await _calendarApi!.events.list(
@@ -60,14 +67,17 @@ class GoogleCalendarService {
       final List<DateTime> availableSlots = [];
       final List<DateTime> allSlots = [];
 
-      // Generate all possible time slots (every hour from 8 AM to 6 PM)
-      for (int hour = 8; hour < 18; hour++) {
+      // Service hours: 9 AM to 5 PM
+      // Each service takes 2 hours
+      // Available start times: 9 AM, 11 AM, 1 PM, 3 PM
+      for (int hour = 9; hour < 17; hour += 2) {
         allSlots.add(DateTime(date.year, date.month, date.day, hour, 0));
       }
 
-      // Check which slots are available
+      // Check which slots are available (considering 2-hour service duration)
       for (final slot in allSlots) {
         bool isAvailable = true;
+        final slotEnd = slot.add(const Duration(hours: 2));
 
         if (events.items != null) {
           for (final event in events.items!) {
@@ -75,8 +85,8 @@ class GoogleCalendarService {
             final eventEnd = event.end?.dateTime?.toLocal();
 
             if (eventStart != null && eventEnd != null) {
-              if (slot.isAfter(eventStart.subtract(const Duration(minutes: 1))) &&
-                  slot.isBefore(eventEnd)) {
+              // Check if the 2-hour slot overlaps with any existing event
+              if ((slot.isBefore(eventEnd) && slotEnd.isAfter(eventStart))) {
                 isAvailable = false;
                 break;
               }
@@ -102,6 +112,7 @@ class GoogleCalendarService {
     required String vehicleType,
     required String customerName,
     required String customerEmail,
+    required String serviceAddress,
   }) async {
     if (_calendarApi == null) {
       throw Exception('Not signed in');
@@ -110,7 +121,8 @@ class GoogleCalendarService {
     try {
       final event = calendar.Event()
         ..summary = 'Supreme Steam - $vehicleType'
-        ..description = 'Customer: $customerName\nEmail: $customerEmail'
+        ..description = 'Customer: $customerName\nEmail: $customerEmail\nAddress: $serviceAddress'
+        ..location = serviceAddress
         ..start = calendar.EventDateTime()
         ..start!.dateTime = startTime.toUtc()
         ..end = calendar.EventDateTime()

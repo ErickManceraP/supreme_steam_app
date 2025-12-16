@@ -22,7 +22,7 @@ class _BookingScreenState extends State<BookingScreen> {
   final GoogleCalendarService _calendarService = GoogleCalendarService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _calendarIdController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
 
   @override
   void initState() {
@@ -32,7 +32,10 @@ class _BookingScreenState extends State<BookingScreen> {
 
   void _generateMockSlots(DateTime date) {
     final List<DateTime> slots = [];
-    for (int hour = 8; hour < 18; hour++) {
+    // Service hours: 9 AM to 5 PM
+    // Each service takes 2 hours
+    // Available start times: 9 AM, 11 AM, 1 PM, 3 PM
+    for (int hour = 9; hour < 17; hour += 2) {
       slots.add(DateTime(date.year, date.month, date.day, hour, 0));
     }
     setState(() {
@@ -50,18 +53,11 @@ class _BookingScreenState extends State<BookingScreen> {
       _isLoading = true;
     });
 
-    final calendarId = _calendarIdController.text.trim();
-    if (calendarId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter Calendar ID')),
-      );
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    final slots = await _calendarService.getAvailableSlots(date, calendarId);
+    // Load available slots from business calendar
+    final slots = await _calendarService.getAvailableSlots(
+      date,
+      GoogleCalendarService.businessCalendarId,
+    );
 
     setState(() {
       _availableSlots = slots;
@@ -103,9 +99,11 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
-    if (_nameController.text.trim().isEmpty || _emailController.text.trim().isEmpty) {
+    if (_nameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your name and email')),
+        const SnackBar(content: Text('Please enter your name, email, and service address')),
       );
       return;
     }
@@ -115,23 +113,14 @@ class _BookingScreenState extends State<BookingScreen> {
     });
 
     if (_calendarService.isSignedIn) {
-      final calendarId = _calendarIdController.text.trim();
-      if (calendarId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter Calendar ID')),
-        );
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
+      // Create booking in business calendar
       final success = await _calendarService.createBooking(
-        calendarId: calendarId,
+        calendarId: GoogleCalendarService.businessCalendarId,
         startTime: _selectedTimeSlot!,
         vehicleType: widget.vehicleType.name,
         customerName: _nameController.text.trim(),
         customerEmail: _emailController.text.trim(),
+        serviceAddress: _addressController.text.trim(),
       );
 
       if (!mounted) return;
@@ -149,6 +138,7 @@ class _BookingScreenState extends State<BookingScreen> {
               'Your ${widget.vehicleType.name} wash is scheduled for:\n'
               '${DateFormat('EEEE, MMMM d, y').format(_selectedTimeSlot!)}\n'
               'at ${DateFormat('h:mm a').format(_selectedTimeSlot!)}\n\n'
+              'Service Address:\n${_addressController.text.trim()}\n\n'
               'Price: \$${widget.vehicleType.basePrice.toStringAsFixed(2)}',
             ),
             actions: [
@@ -181,8 +171,9 @@ class _BookingScreenState extends State<BookingScreen> {
             'Your ${widget.vehicleType.name} wash is scheduled for:\n'
             '${DateFormat('EEEE, MMMM d, y').format(_selectedTimeSlot!)}\n'
             'at ${DateFormat('h:mm a').format(_selectedTimeSlot!)}\n\n'
+            'Service Address:\n${_addressController.text.trim()}\n\n'
             'Price: \$${widget.vehicleType.basePrice.toStringAsFixed(2)}\n\n'
-            'Note: This is a demo booking. Sign in with Google Calendar for real bookings.',
+            'We will arrive at your location at the scheduled time!',
           ),
           actions: [
             TextButton(
@@ -261,14 +252,18 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(height: 24),
                     if (!_calendarService.isSignedIn)
                       Card(
-                        color: Colors.blue[50],
+                        color: Colors.orange[50],
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             children: [
                               const Text(
-                                'Sign in with Google to sync with your calendar',
-                                style: TextStyle(fontSize: 14),
+                                'Business Owner: Sign in to manage bookings in your Google Calendar',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 12),
                               ElevatedButton.icon(
@@ -284,23 +279,6 @@ class _BookingScreenState extends State<BookingScreen> {
                           ),
                         ),
                       ),
-                    if (_calendarService.isSignedIn) ...[
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _calendarIdController,
-                        decoration: const InputDecoration(
-                          labelText: 'Calendar ID',
-                          hintText: 'your-calendar@gmail.com',
-                          border: OutlineInputBorder(),
-                          helperText: 'Enter the Google Calendar ID to check availability',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () => _loadAvailableSlots(_selectedDay),
-                        child: const Text('Load Available Slots'),
-                      ),
-                    ],
                     const SizedBox(height: 24),
                     const Text(
                       'Select Date',
@@ -405,6 +383,19 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _addressController,
+                      decoration: const InputDecoration(
+                        labelText: 'Service Address',
+                        hintText: '123 Main St, City, State ZIP',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.location_on),
+                        helperText: 'Where should we provide the car wash service?',
+                      ),
+                      maxLines: 2,
+                      keyboardType: TextInputType.streetAddress,
+                    ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
@@ -434,7 +425,7 @@ class _BookingScreenState extends State<BookingScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _calendarIdController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 }
